@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CloudPhone — Điện thoại đám mây</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080a11; --bg2:#0e1119; --panel:#131826; --panel2:#1a2032;
+  --line:#232a3f; --text:#e9edf9; --muted:#8891ab;
+  --accent:#5b8cff; --accent2:#22d3ee; --green:#34d399; --amber:#fbbf24; --red:#f87171;
+}
+html,body{height:100%}
+body{
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  background:radial-gradient(1100px 600px at 85% -15%, #1b2a4a 0%, transparent 60%), var(--bg);
+  color:var(--text); overflow:hidden;
+}
+button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#2b3350;border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ============ LAYOUT ============ */
+.app{display:grid;grid-template-columns:248px 1fr;height:100vh}
+
+/* ---------- SIDEBAR ---------- */
+.sidebar{
+  background:linear-gradient(180deg,#0d1120,#0a0d17);
+  border-right:1px solid var(--line);
+  display:flex;flex-direction:column;padding:18px 14px;gap:10px;
+}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 18px}
+.brand-logo{
+  width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:20px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  box-shadow:0 8px 20px -6px rgba(91,140,255,.8);
+}
+.brand b{font-size:15px;display:block;letter-spacing:.2px}
+.brand small{font-size:11px;color:var(--muted)}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav-item{
+  display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:11px;
+  color:var(--muted);font-size:13.5px;font-weight:500;transition:.18s;text-align:left;
+}
+.nav-item:hover{background:var(--panel);color:var(--text)}
+.nav-item.active{background:linear-gradient(90deg,rgba(91,140,255,.18),rgba(34,211,238,.06));color:#fff;box-shadow:inset 0 0 0 1px rgba(91,140,255,.25)}
+.nav-item .ic{font-size:16px;width:20px;text-align:center}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:14px}
+.quota{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px}
+.quota-row{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-bottom:8px}
+.quota-row b{color:var(--text)}
+.bar{height:6px;background:#0a0e18;border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:6px}
+.quota small{font-size:10.5px;color:var(--muted);display:block;margin-top:8px}
+.user{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;
+  background:linear-gradient(135deg,#7c3aed,#22d3ee);color:#fff}
+.user b{font-size:12.5px;display:block}
+.user small{font-size:10.5px;color:var(--muted)}
+
+/* ---------- MAIN ---------- */
+.main{display:flex;flex-direction:column;overflow:hidden}
+.topbar{
+  height:64px;display:flex;align-items:center;gap:16px;padding:0 24px;
+  border-bottom:1px solid var(--line);background:rgba(13,17,29,.6);backdrop-filter:blur(12px);
+}
+.topbar h1{font-size:16px;font-weight:600}
+.topbar .sub{font-size:12px;color:var(--muted)}
+.spacer{flex:1}
+.pill-status{
+  display:flex;align-items:center;gap:7px;font-size:12px;color:var(--green);
+  background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);padding:6px 12px;border-radius:99px;
+}
+.pill-status .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.5)}70%{box-shadow:0 0 0 8px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+.content{flex:1;overflow:auto;padding:24px}
+.view{display:none;animation:fade .25s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---------- STATS ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat{
+  background:linear-gradient(160deg,var(--panel),#0f1320);border:1px solid var(--line);
+  border-radius:14px;padding:16px;position:relative;overflow:hidden;
+}
+.stat::after{content:'';position:absolute;right:-30px;top:-30px;width:90px;height:90px;border-radius:50%;
+  background:radial-gradient(circle,rgba(91,140,255,.22),transparent 70%)}
+.stat small{font-size:11.5px;color:var(--muted);display:block;margin-bottom:8px}
+.stat b{font-size:24px;font-weight:700;letter-spacing:-.5px}
+.stat span{font-size:11.5px;color:var(--green);margin-left:6px}
+
+/* ---------- DEVICE GRID ---------- */
+.section-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.section-head h2{font-size:14.5px;font-weight:600}
+.section-head .count{font-size:11px;color:var(--muted);background:var(--panel2);padding:3px 9px;border-radius:99px}
+.dev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px}
+.dev-card{
+  background:linear-gradient(165deg,var(--panel),#0c101b);
+  border:1px solid var(--line);border-radius:16px;padding:16px;
+  transition:.2s;position:relative;overflow:hidden;
+}
+.dev-card:hover{border-color:rgba(91,140,255,.5);transform:translateY(-2px);box-shadow:0 18px 34px -20px rgba(91,140,255,.55)}
+.dev-card.offline{opacity:.55}
+.dev-top{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+.dev-ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:19px;
+  background:linear-gradient(140deg,#233054,#141a2b);border:1px solid var(--line)}
+.dev-name b{font-size:13.5px;display:block}
+.dev-name small{font-size:11px;color:var(--muted)}
+.pill{margin-left:auto;font-size:10.5px;padding:4px 10px;border-radius:99px;font-weight:600;letter-spacing:.3px}
+.pill.online{background:rgba(52,211,153,.12);color:var(--green);border:1px solid rgba(52,211,153,.3)}
+.pill.busy{background:rgba(251,191,36,.12);color:var(--amber);border:1px solid rgba(251,191,36,.3)}
+.pill.offline{background:rgba(148,163,184,.1);color:#94a3b8;border:1px solid rgba(148,163,184,.25)}
+.dev-specs{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 0;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line)}
+.dev-specs small{display:block;font-size:10.5px;color:var(--muted);margin-bottom:2px}
+.dev-specs b{font-size:12px;font-weight:600}
+.dev-foot{display:flex;align-items:center;margin-top:13px;gap:10px}
+.ping{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:8px}
+.ping.good{color:var(--green);background:rgba(52,211,153,.1)}
+.ping.mid{color:var(--amber);background:rgba(251,191,36,.1)}
+.ping.bad{color:var(--red);background:rgba(248,113,113,.1)}
+.dev-actions{margin-left:auto;display:flex;gap:8px}
+.btn{padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:600;transition:.18s;border:1px solid transparent}
+.btn.primary{background:linear-gradient(135deg,var(--accent),#3b6fe0);color:#fff;box-shadow:0 8px 18px -10px rgba(91,140,255,.9)}
+.btn.primary:hover{filter:brightness(1.12)}
+.btn.primary:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+.btn.ghost{background:var(--panel2);border-color:var(--line);color:var(--muted)}
+.btn.ghost:hover{color:var(--text);border-color:#334}
+.btn.ghost.on{color:var(--accent2);border-color:rgba(34,211,238,.5);background:rgba(34,211,238,.1)}
+
+/* ---------- CONTROL VIEW ---------- */
+.control-wrap{display:grid;grid-template-columns:1fr 360px;gap:22px;align-items:start}
+.phone-stage{display:flex;flex-direction:column;align-items:center;gap:14px;position:relative;padding:10px 0}
+.phone-frame{
+  width:330px;height:700px;border-radius:46px;padding:11px;position:relative;
+  background:linear-gradient(155deg,#39415e,#141824 45%,#0a0d15);
+  box-shadow:0 50px 90px -30px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.07),inset 0 0 0 2px rgba(255,255,255,.03);
+  transform-origin:top center;
+}
+.phone-frame::before{content:'';position:absolute;left:-3px;top:130px;width:3px;height:60px;border-radius:3px;background:#2c3348}
+.phone-frame::after{content:'';position:absolute;left:-3px;top:210px;width:3px;height:96px;border-radius:3px;background:#2c3348}
+.phone-screen{
+  width:100%;height:100%;border-radius:36px;overflow:hidden;position:relative;
+  background:#000;display:flex;flex-direction:column;touch-action:none;user-select:none;
+}
+.p-status{
+  height:30px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 18px;font-size:11.5px;font-weight:600;color:#fff;flex-shrink:0;z-index:20;
+  background:linear-gradient(180deg,rgba(0,0,0,.35),transparent);
+}
+.p-icons{display:flex;align-items:center;gap:6px}
+.sig{display:flex;align-items:flex-end;gap:1.5px;height:11px}
+.sig i{width:2.5px;background:#fff;border-radius:1px}
+.sig i:nth-child(1){height:3px}.sig i:nth-child(2){height:5px}
+.sig i:nth-child(3){height:8px}.sig i:nth-child(4){height:11px}
+.batt{width:22px;height:11px;border:1.4px solid rgba(255,255,255,.85);border-radius:3px;position:relative;display:inline-block}
+.batt::after{content:'';position:absolute;right:-3.5px;top:3px;width:2px;height:5px;background:rgba(255,255,255,.85);border-radius:0 1px 1px 0}
+.batt i{position:absolute;inset:1.2px;background:#fff;border-radius:1.5px;width:82%}
+.p-body{flex:1;position:relative;overflow:hidden}
+.p-nav{
+  height:42px;display:flex;align-items:center;justify-content:space-around;flex-shrink:0;z-index:20;
+  background:linear-gradient(0deg,rgba(0,0,0,.45),transparent);
+}
+.p-nav button{width:44px;height:32px;display:grid;place-items:center;color:rgba(255,255,255,.85);font-size:15px;border-radius:8px}
+.p-nav button:active{background:rgba(255,255,255,.12)}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .13s;z-index:60}
+.flash.on{opacity:.9}
+.phone-hud{
+  display:flex;gap:14px;font-size:11.5px;color:var(--muted);
+  background:var(--panel);border:1px solid var(--line);padding:8px 16px;border-radius:99px;
+}
+.phone-hud b{color:var(--accent2);font-weight:600}
+.conn-overlay{
+  position:absolute;inset:0;border-radius:46px;background:rgba(6,9,16,.93);backdrop-filter:blur(8px);
+  display:none;place-items:center;z-index:70;text-align:center;
+}
+.conn-overlay.show{display:grid}
+.conn-box{display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px;width:80%}
+.spinner{width:42px;height:42px;border-radius:50%;border:3px solid rgba(91,140,255,.2);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.conn-box b{font-size:14px}
+.conn-box span{font-size:12px;color:var(--muted)}
+.conn-bar{width:100%;height:5px;background:#0a0e18;border-radius:6px;overflow:hidden;margin-top:6px}
+.conn-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .2s}
+
+/* ---------- CONTROL PANEL ---------- */
+.panel-col{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.tabs{display:flex;gap:4px;padding:6px;background:var(--panel2);border-bottom:1px solid var(--line)}
+.tab{flex:1;padding:9px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--muted);transition:.18s}
+.tab.active{background:var(--panel);color:var(--text);box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.tab-body{display:none;padding:16px}
+.tab-body.active{display:block}
+.ctrl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.ctrl-btn{
+  display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 6px;border-radius:12px;
+  background:var(--panel2);border:1px solid var(--line);font-size:11px;color:var(--muted);transition:.18s;
+}
+.ctrl-btn:hover{border-color:rgba(91,140,255,.5);color:var(--text);background:#1e253a}
+.ctrl-btn:active{transform:scale(.96)}
+.ctrl-btn .ico{font-size:17px}
+.divider{height:1px;background:var(--line);margin:14px 0}
+.field{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;font-size:12.5px;color:var(--muted)}
+.field input[type=range]{flex:1;max-width:150px;accent-color:var(--accent);height:4px}
+.field select,.field input[type=text]{
+  background:var(--panel2);border:1px solid var(--line);color:var(--text);
+  padding:7px 10px;border-radius:9px;font-size:12px;outline:none;font-family:inherit;
+}
+.field select:focus,.field input:focus{border-color:var(--accent)}
+.switch{position:relative;width:38px;height:21px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0;position:absolute}
+.switch i{position:absolute;inset:0;background:#2a3350;border-radius:99px;transition:.2s;cursor:pointer}
+.switch i::after{content:'';position:absolute;width:15px;height:15px;border-radius:50%;background:#8891ab;top:3px;left:3px;transition:.2s}
+.switch input:checked + i{background:rgba(91,140,255,.35)}
+.switch input:checked + i::after{transform:translateX(17px);background:var(--accent)}
+.adb-out{
+  height:220px;overflow:auto;background:#070a11;border:1px solid var(--line);border-radius:11px;
+  padding:11px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11.5px;line-height:1.65;
+}
+.adb-line{white-space:pre-wrap;word-break:break-all}
+.adb-line.cmd{color:var(--accent2)}
+.adb-line.err{color:var(--red)}
+.adb-line.ok{color:var(--green)}
+.adb-line.dim{color:#5b6480}
+.adb-input{display:flex;gap:8px;margin-top:10px}
+.adb-input input{
+  flex:1;background:#070a11;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  color:var(--text);font-family:Consolas,monospace;font-size:12px;outline:none;
+}
+.adb-input input:focus{border-color:var(--accent)}
+.adb-input button{padding:0 16px;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;font-size:12.5px}
+canvas#chart{width:100%;height:56px;display:block;margin-top:6px}
+
+/* ---------- PHONE UI (inside screen) ---------- */
+.home,.drawer,.app-screen,.lockscreen{position:absolute;inset:0;display:flex;flex-direction:column}
+.wallpaper{background:linear-gradient(160deg,#1b2a4a,#3b2b5e 45%,#0f1626)}
+.lockscreen{align-items:center;justify-content:center;color:#fff;text-align:center;gap:8px}
+.lock-clock b{font-size:54px;font-weight:300;letter-spacing:-2px;display:block;line-height:1}
+.lock-clock span{font-size:12px;color:rgba(255,255,255,.65)}
+.lock-hint{position:absolute;bottom:44px;font-size:12px;color:rgba(255,255,255,.6);animation:bob 2.2s infinite}
+@keyframes bob{0%,100%{transform:translateY(0);opacity:.6}50%{transform:translateY(-7px);opacity:1}}
+.lock-lockicon{font-size:26px;margin-bottom:6px;opacity:.8}
+
+.home{padding:14px 12px;color:#fff;overflow:auto}
+.home-search{
+  background:rgba(255,255,255,.13);border-radius:99px;padding:8px 14px;font-size:11.5px;
+  color:rgba(255,255,255,.7);margin-bottom:16px;display:flex;align-items:center;gap:7px;
+}
+.app-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 6px}
+.app-ico{display:flex;flex-direction:column;align-items:center;gap:6px;color:#fff;font-size:9.5px}
+.app-ico .ico{
+  width:50px;height:50px;border-radius:15px;display:grid;place-items:center;font-size:23px;
+  box-shadow:0 8px 16px -8px rgba(0,0,0,.9);transition:.15s;
+}
+.app-ico:active .ico{transform:scale(.9)}
+.app-ico .lbl{max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.95}
+
+.drawer{padding:14px 12px;color:#fff;overflow:auto}
+.drawer h4{font-size:12px;margin:4px 0 14px;opacity:.75;font-weight:500}
+
+.app-screen{background:#0b0f18;color:var(--text)}
+.app-head{
+  height:50px;display:flex;align-items:center;gap:10px;padding:0 12px;flex-shrink:0;
+  background:#111726;border-bottom:1px solid #1e2537;
+}
+.app-head b{font-size:13px}
+.app-head .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:19px;color:#9fb0d4}
+.app-head .ic:active{background:#1c2333}
+.app-body{flex:1;overflow:auto;padding:14px}
+.sgroup{background:#121828;border:1px solid #1e2537;border-radius:12px;margin-bottom:12px;overflow:hidden}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:12px 13px;font-size:12px;border-bottom:1px solid #1a2132}
+.srow:last-child{border-bottom:0}
+.srow b{font-weight:500;color:#93a0bd;font-size:11.5px}
+.srow input[type=range]{width:110px;accent-color:#5b8cff}
+.gal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.gal-grid i{aspect-ratio:1;border-radius:7px;display:block}
+.chat{display:flex;flex-direction:column;gap:9px}
+.bub{max-width:76%;padding:9px 12px;border-radius:13px;font-size:11.5px;line-height:1.5}
+.bub.me{align-self:flex-end;background:#2a5bd7;color:#fff;border-bottom-right-radius:4px}
+.bub.them{align-self:flex-start;background:#1b2233;color:#c7d2e8;border-bottom-left-radius:4px}
+.chat-input{display:flex;gap:7px;padding:9px;background:#111726;border-top:1px solid #1e2537}
+.chat-input input{flex:1;background:#0b0f18;border:1px solid #1e2537;border-radius:99px;padding:8px 13px;color:#fff;font-size:11.5px;outline:none}
+.chat-input button{width:32px;height:32px;border-radius:50%;background:#5b8cff;color:#fff;display:grid;place-items:center}
+.dial{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:16px 6px}
+.dial button{aspect-ratio:1;border-radius:50%;background:#182034;font-size:18px;color:#fff;display:grid;place-items:center}
+.dial button:active{background:#232f4d}
+.notes-area{width:100%;height:100%;background:#12182a;border:1px solid #1e2537;border-radius:12px;color:#dbe4f8;
+  padding:12px;font-size:12px;line-height:1.65;font-family:inherit;outline:none;resize:none}
+.bigclock{text-align:center;padding:26px 0}
+.bigclock b{font-size:46px;font-weight:300;letter-spacing:-2px;display:block}
+.bigclock span{font-size:12px;color:#8891ab}
+.urlbar{display:flex;gap:7px;margin-bottom:12px}
+.urlbar input{flex:1;background:#12182a;border:1px solid #1e2537;border-radius:99px;padding:9px 14px;color:#fff;font-size:11.5px;outline:none}
+.webpage{background:#12182a;border:1px solid #1e2537;border-radius:12px;padding:16px;font-size:12px;line-height:1.75;color:#c7d2e8}
+.webpage h3{font-size:14px;margin-bottom:9px;color:#fff}
+.mapview{height:100%;border-radius:12px;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,#0f2b1f,#14361f 40%,#0d1f33);border:1px solid #1e2537}
+.mapview::before{content:'';position:absolute;inset:0;background-image:
+  linear-gradient(rgba(90,140,255,.12) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(90,140,255,.12) 1px,transparent 1px);
+  background-size:34px 34px}
+.map-pin{position:absolute;left:50%;top:45%;transform:translate(-50%,-100%);font-size:26px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.6))}
+.music{display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:20px}
+.music .cover{width:130px;height:130px;border-radius:20px;background:linear-gradient(135deg,#f472b6,#7c3aed);
+  display:grid;place-items:center;font-size:44px;box-shadow:0 20px 40px -18px rgba(124,58,237,.9)}
+.music .track{text-align:center}
+.music .track b{font-size:14px;display:block}
+.music .track span{font-size:11.5px;color:#8891ab}
+.music .prog{width:100%;height:4px;background:#1e2537;border-radius:4px;overflow:hidden}
+.music .prog i{display:block;height:100%;width:36%;background:linear-gradient(90deg,#f472b6,#7c3aed)}
+.file-row{display:flex;align-items:center;gap:11px;padding:11px 12px;border-bottom:1px solid #1a2132;font-size:12px}
+.file-row:last-child{border-bottom:0}
+.file-row .fi{font-size:17px}
+.file-row small{color:#8891ab;font-size:10.5px;display:block}
+.file-row b{font-weight:500}
+.cam-view{height:190px;border-radius:12px;background:linear-gradient(160deg,#0c1a2e,#123);display:grid;place-items:center;
+  color:#3d567c;font-size:12px;position:relative;overflow:hidden}
+.cam-view::after{content:'';position:absolute;inset:0;background:
+  repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 1px,transparent 1px 3px)}
+.shutter{width:56px;height:56px;border-radius:50%;background:#fff;border:4px solid #38405c;margin:18px auto 0;display:block}
+.shutter:active{transform:scale(.93)}
+.store-item{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid #1a2132}
+.store-item:last-child{border-bottom:0}
+.store-item .si{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:18px;background:#1b2233}
+.store-item .sn{flex:1;font-size:12px}
+.store-item .sn small{display:block;color:#8891ab;font-size:10.5px}
+.store-item button{padding:6px 13px;border-radius:99px;background:#5b8cff;color:#fff;font-size:11px;font-weight:600}
+
+/* ---------- APPS / SETTINGS VIEWS ---------- */
+.table{width:100%;border-collapse:collapse;font-size:12.5px}
+.table th{text-align:left;color:var(--muted);font-weight:500;font-size:11.5px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.table td{padding:13px 12px;border-bottom:1px solid #171d2c}
+.table tr:hover td{background:rgba(91,140,255,.05)}
+.badge{font-size:10.5px;padding:3px 9px;border-radius:99px;background:rgba(91,140,255,.14);color:#8fb0ff}
+.set-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.set-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.set-card h3{font-size:13.5px;margin-bottom:14px}
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #171d2c;font-size:12.5px;color:var(--muted)}
+.set-row:last-child{border-bottom:0}
+.set-row b{color:var(--text);font-weight:500}
+
+/* ---------- TOAST ---------- */
+#toasts{position:fixed;bottom:22px;right:22px;display:flex;flex-direction:column;gap:9px;z-index:999}
+.toast{
+  display:flex;align-items:center;gap:10px;padding:12px 17px;border-radius:12px;font-size:12.5px;font-weight:500;
+  background:#151b2b;border:1px solid var(--line);box-shadow:0 18px 34px -16px rgba(0,0,0,.9);
+  animation:slideIn .25s ease;max-width:320px;
+}
+.toast.ok{border-color:rgba(52,211,153,.4);color:#8ef0c8}
+.toast.err{border-color:rgba(248,113,113,.4);color:#ffb3b3}
+.toast.info{border-color:rgba(91,140,255,.4);color:#a8c0ff}
+@keyframes slideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+
+@media (max-width:1180px){
+  .control-wrap{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">☁</div>
+      <div><b>CloudPhone</b><small>v2.4 · Pro</small></div>
+    </div>
+    <nav class="nav">
+      <button class="nav-item active" data-nav="devices"><span class="ic">📱</span><span>Thiết bị</span></button>
+      <button class="nav-item" data-nav="control"><span class="ic">🎮</span><span>Điều khiển</span></button>
+      <button class="nav-item" data-nav="apps"><span class="ic">🧩</span><span>Ứng dụng</span></button>
+      <button class="nav-item" data-nav="settings"><span class="ic">⚙️</span><span>Cài đặt</span></button>
+    </nav>
+    <div class="side-foot">
+      <div class="quota">
+        <div class="quota-row"><span>Dung lượng lưu trữ</span><b>68%</b></div>
+        <div class="bar"><i style="width:68%"></i></div>
+        <small>34.2 GB / 50 GB đã dùng</small>
+      </div>
+      <div class="user">
+        <div class="avatar">NA</div>
+        <div><b>Nguyễn An</b><small>Gói Pro</small></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <h1 id="pageTitle">Thiết bị đám mây</h1>
+        <div class="sub" id="pageSub">Quản lý và điều khiển điện thoại ảo của bạn</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="pill-status"><span class="dot"></span> Máy chủ: Singapore</div>
+    </header>
+
+    <div class="content">
+
+      <!-- ---------- VIEW: DEVICES ---------- -->
+      <section class="view active" id="view-devices">
+        <div class="stats">
+          <div class="stat"><small>Tổng thiết bị</small><b>6</b></div>
+          <div class="stat"><small>Đang hoạt động</small><b style="color:var(--green)">4</b></div>
+          <div class="stat"><small>Phiên hôm nay</small><b>128</b><span>+12%</span></div>
+          <div class="stat"><small>Băng thông</small><b>42.8<span style="font-size:13px"> Mbps</span></b></div>
+        </div>
+
+        <div class="section-head">
+          <h2>Danh sách thiết bị</h2>
+          <span class="count">6 thiết bị</span>
+        </div>
+        <div class="dev-grid" id="devGrid"></div>
+      </section>
+
+      <!-- ---------- VIEW: CONTROL ---------- -->
+      <section class="view" id="view-control">
+        <div class="control-wrap">
+          <div class="phone-stage" id="phoneStage">
+            <div class="phone-frame" id="phoneFrame">
+              <div class="phone-screen" id="phoneScreen">
+                <div class="p-status">
+                  <span id="pTime">09:41</span>
+                  <span class="p-icons">
+                    <span class="sig"><i></i><i></i><i></i><i></i></span>
+                    <span id="pWifi" style="font-size:10px">📶</span>
+                    <span class="batt"><i id="pBattFill"></i></span>
+                  </span>
+                </div>
+                <div class="p-body" id="screenBody"></div>
+                <div class="p-nav">
+                  <button data-hard="back">◁</button>
+                  <button data-hard="home">○</button>
+                  <button data-hard="recents">□</button>
+                </div>
+                <div class="flash" id="flash"></div>
+                <div class="conn-overlay" id="connOverlay">
+                  <div class="conn-box">
+                    <div class="spinner"></div>
+                    <b class="conn-title">Đang kết nối…</b>
+                    <span class="conn-sub">Thiết lập WebRTC…</span>
+                    <div class="conn-bar"><i></i></div>
+                  </div>
+                </div>
+                <div class="conn-overlay" id="idleOverlay">
+                  <div class="conn-box">
+                    <div style="font-size:34px">📵</div>
+                    <b>Chưa có thiết bị nào được kết nối</b>
+                    <span>Chọn một thiết bị trong danh sách để bắt đầu</span>
+                    <button class="btn primary" style="margin-top:10px" data-goto="devices">Chọn thiết bị</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="phone-hud">
+              <span>Độ trễ: <b id="hudPing">24 ms</b></span>
+              <span>FPS: <b id="hudFps">60</b></span>
+              <span>Băng thông: <b id="hudBw">4.2 Mbps</b></span>
+            </div>
+          </div>
+
+          <div class="panel-col">
+            <div class="card">
+              <div class="tabs">
+                <button class="tab active" data-tab="dev">Thiết bị</button>
+                <button class="tab" data-tab="net">Mạng</button>
+                <button class="tab" data-tab="adb">ADB</button>
+              </div>
+
+              <!-- TAB DEVICE -->
+              <div class="tab-body active" id="tab-dev">
+                <div class="ctrl-grid">
+                  <button class="ctrl-btn" data-ctrl="power"><span class="ico">⏻</span>Nguồn</button>
+                  <button class="ctrl-btn" data-ctrl="volup"><span class="ico">🔊</span>Tăng âm</button>
+                  <button class="ctrl-btn" data-ctrl="voldown"><span class="ico">🔉</span>Giảm âm</button>
+                  <button class="ctrl-btn" data-ctrl="rotate"><span class="ico">🔄</span>Xoay</button>
+                  <button class="ctrl-btn" data-ctrl="screenshot"><span class="ico">📸</span>Chụp</button>
+                  <button class="ctrl-btn" data-ctrl="fullscreen"><span class="ico">⛶</span>Toàn màn</button>
+                  <button class="ctrl-btn" data-ctrl="home"><span class="ico">🏠</span>Home</button>
+                  <button class="ctrl-btn" data-ctrl="back"><span class="ico">↩</span>Quay lại</button>
+                  <button class="ctrl-btn" data-ctrl="install"><span class="ico">📦</span>Cài APK</button>
+                </div>
+                <input type="file" id="apkInput" accept=".apk" hidden>
+                <div class="divider"></div>
+                <div class="field"><span>Độ sáng</span><input type="range" id="brightness" min="30" max="100" value="88"></div>
+                <div class="field"><span>Âm lượng</span><input type="range" id="volume" min="0" max="100" value="45"></div>
+                <div class="field"><span>Tự động xoay</span>
+                  <label class="switch"><input type="checkbox" id="autoRotate" checked><i></i></label>
+                </div>
+              </div>
+
+              <!-- TAB NETWORK -->
+              <div class="tab-body" id="tab-net">
+                <div class="field"><span>Loại mạng</span>
+                  <select id="netType"><option>5G</option><option>4G LTE</option><option>Wi-Fi</option><option>3G</option></select>
+                </div>
+                <div class="field"><span>Độ trễ (ms)</span><input type="range" id="latency" min="5" max="200" value="24"></div>
+                <div class="field"><span>Vị trí GPS</span>
+                  <label class="switch"><input type="checkbox" id="gpsToggle" checked><i></i></label>
+                </div>
+                <div class="field"><span>Toạ độ</span><input type="text" id="coords" value="1.3521, 103.8198" style="width:140px"></div>
+                <div class="field"><span>Proxy</span><input type="text" id="proxy" value="Không dùng" style="width:140px"></div>
+                <div class="divider"></div>
+                <button class="btn primary" style="width:100%" id="pingTest">Kiểm tra kết nối</button>
+                <canvas id="chart"></canvas>
+              </div>
+
+              <!-- TAB ADB -->
+              <div class="tab-body" id="tab-adb">
+                <div class="adb-out" id="adbOut"></div>
+                <div class="adb-input">
+                  <input id="adbInput" placeholder="adb shell pm list packages" autocomplete="off">
+                  <button id="adbSend">Chạy</button>
+                </div>
+                <div style="font-size:10.5px;color:var(--muted);margin-top:8px">Gõ <b>help</b> để xem danh sách lệnh hỗ trợ.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- VIEW: APPS ---------- -->
+      <section class="view" id="view-apps">
+        <div class="section-head"><h2>Ứng dụng đã cài trên thiết bị</h2><span class="count" id="appCount">12</span></div>
+        <div class="card" style="padding:6px 4px">
+          <table class="table">
+            <thead><tr><th>Tên</th><th>Gói</th><th>Phiên bản</th><th>Dung lượng</th><th>Trạng thái</th></tr></thead>
+            <tbody id="appsTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ---------- VIEW: SETTINGS ---------- -->
+      <section class="view" id="view-settings">
+        <div class="set-grid">
+          <div class="set-card">
+            <h3>Phiên kết nối</h3>
+            <div class="set-row"><span>Chất lượng stream</span><b>1080p · 60fps</b></div>
+            <div class="set-row"><span>Codec</span><b>H.265 (HEVC)</b></div>
+            <div class="set-row"><span>Bitrate tối đa</span><b>8 Mbps</b></div>
+            <div class="set-row"><span>Chế độ hiển thị</span><b>Ưu tiên độ trễ</b></div>
+            <div class="set-row"><span>Tự động ngắt sau</span><b>30 phút không dùng</b></div>
+          </div>
+          <div class="set-card">
+            <h3>Bảo mật</h3>
+            <div class="set-row"><span>Xác thực 2 lớp</span>
+              <label class="switch"><input type="checkbox" checked><i></i></label></div>
+            <div class="set-row"><span>Mã hoá đầu cuối</span>
+              <label class="switch"><input type="checkbox" checked><i></i></label></div>
+            <div class="set-row"><span>Khoá thiết bị từ xa</span>
+              <label class="switch"><input type="checkbox"><i></i></label></div>
+            <div class="set-row"><span>Ghi log phiên</span>
+              <label class="switch"><input type="checkbox" checked><i></i></label></div>
+          </div>
+          <div class="set-card">
+            <h3>Thông tin hệ thống</h3>
+            <div class="set-row"><span>Phiên bản</span><b>CloudPhone 2.4.1</b></div>
+            <div class="set-row"><span>Máy chủ</span><b>sg-sin-03.cloudphone.io</b></div>
+            <div class="set-row"><span>Uptime</span><b>17 ngày 4 giờ</b></div>
+            <div class="set-row"><span>Gói dịch vụ</span><b>Pro · 50 GB</b></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+/* =========================================================
+   CLOUDPHONE — ứng dụng web mô phỏng điện thoại đám mây
+   ========================================================= */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+/* ---------------- DỮ LIỆU THIẾT BỊ ---------------- */
+const DEVICES = [
+  { id:'CP-7F2A', model:'Pixel 8 Pro',    android:'14', res:'1440×3120', cpu:8, ram:12, region:'Singapore', status:'online',  ping:24 },
+  { id:'CP-3B9C', model:'Galaxy S24 Ultra',android:'14', res:'1440×3088', cpu:8, ram:12, region:'Tokyo',     status:'online',  ping:52 },
+  { id:'CP-1D4E', model:'Xiaomi 14',      android:'13', res:'1200×2670', cpu:6, ram:8,  region:'Hồng Kông', status:'busy',    ping:78 },
+  { id:'CP-9A6F', model:'Pixel 7a',       android:'13', res:'1080×2400', cpu:4, ram:6,  region:'Frankfurt', status:'offline', ping:0  },
+  { id:'CP-5E2B', model:'OnePlus 12',     android:'14', res:'1440×3168', cpu:8, ram:16, region:'Mumbai',    status:'online',  ping:61 },
+  { id:'CP-8C1H', model:'Redmi Note 13',  android:'13', res:'1080×2400', cpu:4, ram:6,  region:'Hà Nội',    status:'online',  ping:12 },
+];
+
+/* ---------------- DANH SÁCH ỨNG DỤNG ---------------- */
+const APPS = [
+  { id:'phone',    name:'Điện thoại',  icon:'📞', grad:'linear-gradient(135deg,#34d399,#059669)' },
+  { id:'messages', name:'Tin nhắn',    icon:'💬', grad:'linear-gradient(135deg,#60a5fa,#2563eb)' },
+  { id:'camera',   name:'Máy ảnh',     icon:'📷', grad:'linear-gradient(135deg,#f472b6,#be185d)' },
+  { id:'gallery',  name:'Thư viện',    icon:'🖼️', grad:'linear-gradient(135deg,#a78bfa,#6d28d9)' },
+  { id:'browser',  name:'Trình duyệt', icon:'🌐', grad:'linear-gradient(135deg,#22d3ee,#0891b2)' },
+  { id:'notes',    name:'Ghi chú',     icon:'📝', grad:'linear-gradient(135deg,#fbbf24,#d97706)' },
+  { id:'clock',    name:'Đồng hồ',     icon:'⏰', grad:'linear-gradient(135deg,#94a3b8,#475569)' },
+  { id:'settings', name:'Cài đặt',     icon:'⚙️', grad:'linear-gradient(135deg,#818cf8,#4338ca)' },
+  { id:'files',    name:'Tệp',         icon:'📁', grad:'linear-gradient(135deg,#fcd34d,#b45309)' },
+  { id:'music',    name:'Âm nhạc',     icon:'🎵', grad:'linear-gradient(135deg,#f87171,#b91c1c)' },
+  { id:'maps',     name:'Bản đồ',      icon:'🗺️', grad:'linear-gradient(135deg,#4ade80,#15803d)' },
+  { id:'store',    name:'Cửa hàng',    icon:'🛍️', grad:'linear-gradient(135deg,#38bdf8,#1d4ed8)' },
+];
+
+/* ---------------- STATE ---------------- */
+const state = {
+  view:'devices',
+  deviceId:null,
+  connected:false,
+  screen:'lock',          // off | lock | home | drawer | app
+  app:null,
+  rotated:false,
+  installed:[],           // app cài thêm
+  settings:{ wifi:true, bt:false, airplane:false, dnd:false, brightness:88, volume:45, autoRotate:true },
+  net:{ type:'5G', latency:24 },
+  notes:'',
+  gallery:128,
+  battery:86,
+  messages:[
+    { me:false, text:'Chào bạn! Thiết bị đám mây đã sẵn sàng 🚀' },
+    { me:true,  text:'Tuyệt, kết nối rất mượt!' },
+  ],
+  log:[],
+  appTimer:null,
+};
+
+/* =========================================================
+   TOAST + LOG
+   ========================================================= */
+function toast(msg, type='info'){
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(30px)'; el.style.transition='.25s'; }, 2400);
+  setTimeout(()=> el.remove(), 2750);
+}
+function pushLog(text, cls='out'){
+  state.log.push({ text, cls });
+  renderLog();
+}
+function renderLog(){
+  const box = $('#adbOut');
+  if(!box) return;
+  box.innerHTML = state.log.map(l => `<div class="adb-line ${l.cls}">${escapeHtml(l.text)}</div>`).join('');
+  box.scrollTop = box.scrollHeight;
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* =========================================================
+   ĐIỀU HƯỚNG VIEW
+   ========================================================= */
+function switchView(name){
+  state.view = name;
+  $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
+  $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  const titles = {
+    devices: ['Thiết bị đám mây','Quản lý và điều khiển điện thoại ảo của bạn'],
+    control: ['Bảng điều khiển','Điều khiển thiết bị từ xa theo thời gian thực'],
+    apps:    ['Quản lý ứng dụng','Ứng dụng đã cài trên thiết bị đang chọn'],
+    settings:['Cài đặt','Cấu hình phiên kết nối và bảo mật'],
+  };
+  $('#pageTitle').textContent = titles[name][0];
+  $('#pageSub').textContent  = titles[name][1];
+  if(name === 'control') updateIdleOverlay();
+  if(name === 'apps') renderAppsTable();
+}
+$$('.nav-item').forEach(b => b.onclick = () => switchView(b.dataset.nav));
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-goto]');
+  if(g) switchView(g.dataset.goto);
+});
+
+/* =========================================================
+   RENDER DANH SÁCH THIẾT BỊ
+   ========================================================= */
+function statusText(s){ return s === 'online' ? 'TRỰC TUYẾN' : s === 'busy' ? 'ĐANG BẬN' : 'NGOẠI TUYẾN'; }
+
+function renderDevices(){
+  $('#devGrid').innerHTML = DEVICES.map(d => `
+    <div class="dev-card ${d.status}" data-id="${d.id}">
+      <div class="dev-top">
+        <div class="dev-ico">📱</div>
+        <div class="dev-name"><b>${d.model}</b><small>${d.id} · Android ${d.android}</small></div>
+        <span class="pill ${d.status}">${statusText(d.status)}</span>
+      </div>
+      <div class="dev-specs">
+        <div><small>CPU</small><b>${d.cpu} vCPU</b></div>
+        <div><small>RAM</small><b>${d.ram} GB</b></div>
+        <div><small>Độ phân giải</small><b>${d.res}</b></div>
+        <div><small>Khu vực</small><b>${d.region}</b></div>
+      </div>
+      <div class="dev-foot">
+        <span class="ping ${d.ping < 40 ? 'good' : d.ping < 80 ? 'mid' : 'bad'}">${d.ping ? d.ping + ' ms' : '--'}</span>
+        <div class="dev-actions">
+          <button class="btn ghost" data-act="reboot" data-id="${d.id}" title="Khởi động lại">↻</button>
+          <button class="btn primary" data-act="connect" data-id="${d.id}" ${d.status === 'offline' ? 'disabled' : ''}>Kết nối</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+$('#devGrid').addEventListener('click', e => {
+  const btn = e.target.closest('[data-act]');
+  if(!btn) return;
+  const id = btn.dataset.id;
+  if(btn.dataset.act === 'connect') connectDevice(id);
+  if(btn.dataset.act === 'reboot'){
+    toast('Đang khởi động lại ' + id + '…', 'info');
+    pushLog('reboot ' + id, 'cmd');
+  }
+});
+
+/* =========================================================
+   KẾT NỐI THIẾT BỊ
+   ========================================================= */
+function connectDevice(id){
+  const d = DEVICES.find(x => x.id === id);
+  if(!d || d.status === 'offline'){ toast('Thiết bị đang ngoại tuyến', 'err'); return; }
+
+  state.deviceId = id;
+  state.connected = false;
+  switchView('control');
+
+  const ov = $('#connOverlay');
+  const bar = ov.querySelector('.conn-bar i');
+  ov.querySelector('.conn-title').textContent = 'Đang kết nối tới ' + d.model;
+  ov.querySelector('.conn-sub').textContent = 'Thiết lập WebRTC…';
+  bar.style.width = '0%';
+  ov.classList.add('show');
+  $('#idleOverlay').classList.remove('show');
+
+  let p = 0;
+  const timer = setInterval(() => {
+    p += Math.random() * 20 + 10;
+    if(p >= 100){
+      p = 100;
+      clearInterval(timer);
+      setTimeout(() => {
+        ov.classList.remove('show');
+        state.connected = true;
+        state.battery = 70 + Math.floor(Math.random() * 25);
+        state.screen = 'lock';
+        updateBattery();
+        renderScreen();
+        toast('Đã kết nối · ' + d.model, 'ok');
+        pushLog(`✔ Kết nối ${d.id} — ${d.region} — ${d.ping}ms`, 'ok');
+      }, 320);
+    }
+    bar.style.width = p + '%';
+    ov.querySelector('.conn-sub').textContent =
+      p < 40 ? 'Thiết lập WebRTC…' : p < 75 ? 'Đồng bộ khung hình…' : 'Hoàn tất…';
+  }, 210);
+}
+
+function updateIdleOverlay(){
+  $('#idleOverlay').classList.toggle('show', !state.connected);
+}
+
+/* =========================================================
+   MÀN HÌNH ĐIỆN THOẠI
+   ========================================================= */
+function currentDevice(){ return DEVICES.find(d => d.id === state.deviceId) || DEVICES[0]; }
+
+function renderScreen(){
+  const body = $('#screenBody');
+  clearInterval(state.appTimer);
+  body.className = 'p-body ' + (state.screen === 'lock' ? 'wallpaper' : '');
+
+  if(state.screen === 'off'){
+    body.className = 'p-body';
+    body.innerHTML = '<div style="position:absolute;inset:0;background:#000"></div>';
+    return;
+  }
+  if(state.screen === 'lock'){ body.innerHTML = lockHTML(); return; }
+  if(state.screen === 'home'){ body.innerHTML = homeHTML(); return; }
+  if(state.screen === 'drawer'){ body.innerHTML = drawerHTML(); return; }
+  if(state.screen === 'app'){
+    body.innerHTML = appHTML(state.app);
+    initApp(state.app);
+  }
+}
+
+function lockHTML(){
+  const now = new Date();
+  return `
+    <div class="lockscreen">
+      <div class="lock-lockicon">🔒</div>
+      <div class="lock-clock">
+        <b>${pad(now.getHours())}:${pad(now.getMinutes())}</b>
+        <span>${weekday(now)} , ${now.getDate()} tháng ${now.getMonth() + 1}</span>
+      </div>
+      <div class="lock-hint">↑ Vuốt lên để mở khóa</div>
+    </div>`;
+}
+
+function appIconHTML(a){
+  return `<button class="app-ico" data-app="${a.id}">
+      <span class="ico" style="background:${a.grad}">${a.icon}</span>
+      <span class="lbl">${a.name}</span>
+    </button>`;
+}
+function allApps(){ return APPS.concat(state.installed); }
+
+function homeHTML(){
+  return `
+    <div class="home">
+      <div class="home-search">🔍 Tìm kiếm ứng dụng…</div>
+      <div class="app-grid">${allApps().map(appIconHTML).join('')}</div>
+    </div>`;
+}
+
+function drawerHTML(){
+  return `
+    <div class="drawer">
+      <h4>Tất cả ứng dụng (${allApps().length})</h4>
+      <div class="app-grid">${allApps().map(appIconHTML).join('')}</div>
+    </div>`;
+}
+
+/* =========================================================
+   NỘI DUNG ỨNG DỤNG
+   ========================================================= */
+function head(title){
+  return `<div class="app-head"><button class="ic" data-hard="back">‹</button><b>${title}</b></div>`;
+}
+
+function appHTML(id){
+  const d = currentDevice();
+  switch(id){
+
+    case 'settings': return head('Cài đặt') + `
+      <div class="app-body">
+        <div class="sgroup">
+          <div class="srow"><span>Wi-Fi</span>
+            <label class="switch"><input type="checkbox" data-set="wifi" ${state.settings.wifi ? 'checked' : ''}><i></i></label></div>
+          <div class="srow"><span>Bluetooth</span>
+            <label class="switch"><input type="checkbox" data-set="bt" ${state.settings.bt ? 'checked' : ''}><i></i></label></div>
+          <div class="srow"><span>Chế độ máy bay</span>
+            <label class="switch"><input type="checkbox" data-set="airplane" ${state.settings.airplane ? 'checked' : ''}><i></i></label></div>
+          <div class="srow"><span>Không làm phiền</span>
+            <label class="switch"><input type="checkbox" data-set="dnd" ${state.settings.dnd ? 'checked' : ''}><i></i></label></div>
+        </div>
+        <div class="sgroup">
+          <div class="srow"><span>Độ sáng</span><input type="range" min="30" max="100" value="${state.settings.brightness}" data-set="brightness"></div>
+          <div class="srow"><span>Âm lượng</span><input type="range" min="0" max="100" value="${state.settings.volume}" data-set="volume"></div>
+        </div>
+        <div class="sgroup">
+          <div class="srow"><span>Model</span><b>${d.model}</b></div>
+          <div class="srow"><span>Phiên bản Android</span><b>${d.android}</b></div>
+          <div class="srow"><span>Độ phân giải</span><b>${d.res}</b></div>
+          <div class="srow"><span>ID thiết bị</span><b>${d.id}</b></div>
+        </div>
+      </div>`;
+
+    case 'gallery':
+      return head('Thư viện') + `<div class="app-body">
+        <div style="font-size:11.5px;color:#8891ab;margin-bottom:10px">${state.gallery} ảnh · 12 video</div>
+        <div class="gal-grid">${
+          ['#f472b6','#60a5fa','#34d399','#fbbf24','#a78bfa','#22d3ee','#fb923c','#f87171','#4ade80']
+          .map(c => `<i style="background:linear-gradient(135deg,${c},#1b2233)"></i>`).join('')
+        }</div></div>`;
+
+    case 'notes':
+      return head('Ghi chú') + `<div class="app-body">
+        <textarea class="notes-area" id="notesArea" placeholder="Nhập ghi chú…">${escapeHtml(state.notes)}</textarea>
+      </div>`;
+
+    case 'clock':
+      return head('Đồng hồ') + `<div class="app-body">
+        <div class="bigclock"><b id="appClock">--:--:--</b><span id="appDate"></span></div>
+        <div class="sgroup">
+          <div class="srow"><span>Múi giờ</span><b>GMT+8</b></div>
+          <div class="srow"><span>Báo thức</span><b>06:30</b></div>
+        </div></div>`;
+
+    case 'browser':
+      return head('Trình duyệt') + `<div class="app-body">
+        <div class="urlbar">
+          <input id="urlInput" value="https://cloudphone.io">
+          <button class="btn primary" id="goBtn" style="padding:0 14px">Đi</button>
+        </div>
+        <div class="webpage">
+          <h3>☁ CloudPhone</h3>
+          Điện thoại đám mây cho phép bạn chạy một thiết bị Android hoàn chỉnh trên máy chủ từ xa,
+          truyền hình ảnh về trình duyệt với độ trễ thấp.<br><br>
+          • Không cần cài đặt<br>
+          • Chạy 24/7<br>
+          • Bảo mật &amp; riêng tư<br>
+        </div></div>`;
+
+    case 'messages': return head('Tin nhắn') + `
+      <div class="app-body" style="padding-bottom:0">
+        <div class="chat" id="chatBox">
+          ${state.messages.map(m => `<div class="bub ${m.me ? 'me' : 'them'}">${escapeHtml(m.text)}</div>`).join('')}
+        </div>
+      </div>
+      <div class="chat-input">
+        <input id="chatInput" placeholder="Nhập tin nhắn…">
+        <button id="chatSend">➤</button>
+      </div>`;
+
+    case 'phone': return head('Điện thoại') + `
+      <div class="app-body" style="display:flex;flex-direction:column">
+        <div style="text-align:center;font-size:22px;padding:18px 0;letter-spacing:1px" id="dialNum">Nhập số</div>
+        <div class="dial">
+          ${['1','2','3','4','5','6','7','8','9','*','0','#'].map(n => `<button data-dial="${n}">${n}</button>`).join('')}
+        </div>
+        <button class="btn primary" style="margin-top:auto;padding:13px">📞 Gọi</button>
+      </div>`;
+
+    case 'camera': return head('Máy ảnh') + `<div class="app-body">
+        <div class="cam-view">Khung ngắm</div>
+        <button class="shutter" id="shutterBtn"></button>
+      </div>`;
+
+    case 'music': return head('Âm nhạc') + `<div class="app-body">
+        <div class="music">
+          <div class="cover">🎵</div>
+          <div class="track"><b>Cloud Dreams</b><span>Neon Waves</span></div>
+          <div class="prog"><i></i></div>
+          <div style="display:flex;gap:26px;font-size:22px">
+            <button>⏮</button><button id="playBtn">▶️</button><button>⏭</button>
+          </div>
+        </div></div>`;
+
+    case 'maps': return head('Bản đồ') + `<div class="app-body" style="padding:10px">
+        <div class="mapview"><div class="map-pin">📍</div></div>
+      </div>`;
+
+    case 'files': return head('Tệp') + `<div class="app-body" style="padding:0">
+        <div class="sgroup" style="margin:12px">
+          ${[
+            ['📁','Download','8 tệp · 124 MB'],
+            ['🖼️','Pictures','${state.gallery} ảnh · 1.2 GB'],
+            ['🎵','Music','24 bài · 180 MB'],
+            ['📦','Android/data','1.4 GB'],
+            ['📄','Documents','12 tệp · 34 MB'],
+          ].map(([i,n,s]) => `<div class="file-row"><span class="fi">${i}</span><div><b>${n}</b><small>${s}</small></div></div>`).join('')}
+        </div></div>`;
+
+    case 'store': return head('Cửa hàng') + `<div class="app-body">
+        ${[
+          ['TikTok','Giải trí · Miễn phí','🎵'],
+          ['Zalo','Liên lạc · Miễn phí','💬'],
+          ['PUBG Mobile','Game · Miễn phí','🎮'],
+          ['Netflix','Giải trí · Miễn phí','🎬'],
+          ['Shopee','Mua sắm · Miễn phí','🛒'],
+        ].map(([n,s,i]) => `<div class="store-item">
+            <div class="si">${i}</div>
+            <div class="sn"><b>${n}</b><small>${s}</small></div>
+            <button data-install-app="${n}">Cài</button>
+          </div>`).join('')}
+      </div>`;
+
+    default:
+      return head('Ứng dụng') + `<div class="app-body" style="display:grid;place-items:center;color:#5b6480;font-size:12px">
+        Ứng dụng đang được tải…</div>`;
+  }
+}
+
+/* =========================================================
+   KHỞI TẠO HÀNH VI ỨNG DỤNG
+   ========================================================= */
+function initApp(id){
+  if(id === 'settings'){
+    $$('[data-set]', $('#screenBody')).forEach(inp => {
+      inp.addEventListener('input', () => {
+        const k = inp.dataset.set;
+        state.settings[k] = inp.type === 'checkbox' ? inp.checked : +inp.value;
+        if(k === 'brightness'){
+          $('#phoneScreen').style.filter = `brightness(${0.55 + state.settings.brightness / 150})`;
+          $('#brightness').value = state.settings.brightness;
+        }
+        if(k === 'volume'){ $('#volume').value = state.settings.volume; }
+        if(k === 'wifi' || k === 'airplane'){ toast('Đã cập nhật: ' + k, 'info'); }
+      });
+    });
+  }
+  if(id === 'notes'){
+    const ta = $('#notesArea');
+    ta.addEventListener('input', () => state.notes = ta.value);
+  }
+  if(id === 'clock'){
+    const tick = () => {
+      const c = $('#appClock'), dt = $('#appDate');
+      if(!c) return clearInterval(state.appTimer);
+      const n = new Date();
+      c.textContent = `${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
+      dt.textContent = `${weekday(n)}, ${n.getDate()} tháng ${n.getMonth() + 1}, ${n.getFullYear()}`;
+    };
+    tick(); state.appTimer = setInterval(tick, 1000);
+  }
+  if(id === 'messages'){
+    const send = () => {
+      const inp = $('#chatInput');
+      if(!inp.value.trim()) return;
+      state.messages.push({ me:true, text:inp.value.trim() });
+      inp.value = '';
+      renderScreen();
+      setTimeout(() => {
+        state.messages.push({ me:false, text:'Đã nhận ✓ (từ thiết bị đám mây)' });
+        renderScreen();
+      }, 800);
+    };
+    $('#chatSend').onclick = send;
+    $('#chatInput').onkeydown = e => { if(e.key === 'Enter') send(); };
+  }
+  if(id === 'phone'){
+    $$('[data-dial]', $('#screenBody')).forEach(b => {
+      b.onclick = () => {
+        const el = $('#dialNum');
+        if(el.textContent === 'Nhập số') el.textContent = '';
+        el.textContent += b.dataset.dial;
+      };
+    });
+  }
+  if(id === 'camera'){
+    const sh = $('#shutterBtn');
+    if(sh) sh.onclick = () => {
+      takeScreenshot();
+      state.gallery++;
+    };
+  }
+  if(id === 'music'){
+    const btn = $('#playBtn');
+    if(btn) btn.onclick = () => btn.textContent = btn.textContent === '▶️' ? '⏸️' : '▶️';
+  }
+  if(id === 'browser'){
+    const go = () => toast('Đang tải ' + $('#urlInput').value + '…', 'info');
+    $('#goBtn').onclick = go;
+    $('#urlInput').onkeydown = e => { if(e.key === 'Enter') go(); };
+  }
+  $$('[data-install-app]', $('#screenBody')).forEach(b => {
+    b.onclick = () => {
+      const name = b.dataset.installApp;
+      if(!state.installed.some(a => a.name === name)){
+        state.installed.push({ id:'x' + Date.now(), name, icon:'📦', grad:'linear-gradient(135deg,#38bdf8,#1d4ed8)' });
+        toast('Đã cài ' + name, 'ok');
+      }
+      b.textContent = 'Đã cài'; b.style.background = '#2a3350';
+    };
+  });
+}
+
+/* =========================================================
+   ĐIỀU HƯỚNG TRONG ĐIỆN THOẠI
+   ========================================================= */
+function openApp(id){
+  state.app = id;
+  state.screen = 'app';
+  renderScreen();
+}
+function goHome(){
+  state.app = null;
+  state.screen = 'home';
+  renderScreen();
+}
+function hardKey(k){
+  if(!state.connected) return;
+  if(k === 'home'){ goHome(); return; }
+  if(k === 'back'){
+    if(state.screen === 'app'){ goHome(); }
+    else if(state.screen === 'drawer'){ goHome(); }
+    else if(state.screen === 'home'){ state.screen = 'lock'; renderScreen(); }
+    return;
+  }
+  if(k === 'recents'){ toast('Không có ứng dụng nào gần đây', 'info'); }
+}
+
+/* click trên màn hình điện thoại */
+$('#screenBody').addEventListener('click', e => {
+  const app = e.target.closest('[data-app]');
+  if(app){ openApp(app.dataset.app); return; }
+  const hk = e.target.closest('[data-hard]');
+  if(hk){ hardKey(hk.dataset.hard); }
+});
+$$('.p-nav button').forEach(b => b.onclick = () => hardKey(b.dataset.hard));
+
+/* ---------------- GESTURES ---------------- */
+let gesture = null;
+const screenEl = $('#phoneScreen');
+screenEl.addEventListener('pointerdown', e => {
+  gesture = { x:e.clientX, y:e.clientY, t:Date.now() };
+});
+screenEl.addEventListener('pointerup', e => {
+  if(!gesture || !state.connected) return;
+  const dx = e.clientX - gesture.x, dy = e.clientY - gesture.y;
+  gesture = null;
+  if(Math.abs(dx) < 40 && Math.abs(dy) < 40) return;  // tap
+
+  if(state.screen === 'lock' && dy < -50){ goHome(); toast('Đã mở khóa', 'ok'); return; }
+  if(state.screen === 'home' && dy < -70){ state.screen = 'drawer'; renderScreen(); return; }
+  if(state.screen === 'drawer' && dy > 70){ goHome(); return; }
+  if(state.screen === 'app' && dx > 90){ goHome(); return; }
+  if(state.screen === 'app' && dy > 110){ goHome(); }
+});
+
+/* =========================================================
+   BẢNG ĐIỀU KHIỂN
+   ========================================================= */
+$$('.tab').forEach(t => t.onclick = () => {
+  $$('.tab').forEach(x => x.classList.toggle('active', x === t));
+  $$('.tab-body').forEach(b => b.classList.toggle('active', b.id === 'tab-' + t.dataset.tab));
+});
+
+$$('[data-ctrl]').forEach(b => b.onclick = () => {
+  const c = b.dataset.ctrl;
+  if(!state.connected && c !== 'install'){ toast('Vui lòng kết nối thiết bị trước', 'err'); return; }
+  switch(c){
+    case 'power':
+      state.screen = state.screen === 'off' ? 'lock' : 'off';
+      renderScreen();
+      toast(state.screen === 'off' ? 'Đã tắt màn hình' : 'Đã bật màn hình', 'info');
+      break;
+    case 'volup':
+      state.settings.volume = Math.min(100, state.settings.volume + 10);
+      $('#volume').value = state.settings.volume;
+      toast('Âm lượng: ' + state.settings.volume + '%', 'info');
+      break;
+    case 'voldown':
+      state.settings.volume = Math.max(0, state.settings.volume - 10);
+      $('#volume').value = state.settings.volume;
+      toast('Âm lượng: ' + state.settings.volume + '%', 'info');
+      break;
+    case 'rotate':
+      state.rotated = !state.rotated;
+      $('#phoneFrame').style.transform = state.rotated ? 'rotate(90deg) scale(.72)' : 'none';
+      toast(state.rotated ? 'Đã xoay ngang' : 'Đã xoay dọc', 'info');
+      break;
+    case 'screenshot': takeScreenshot(); break;
+    case 'fullscreen':
+      const st = $('#phoneStage');
+      if(!document.fullscreenElement) st.requestFullscreen && st.requestFullscreen();
+      else document.exitFullscreen();
+      break;
+    case 'home': hardKey('home'); break;
+    case 'back': hardKey('back'); break;
+    case 'install': $('#apkInput').click(); break;
+  }
+});
+
+function takeScreenshot(){
+  const f = $('#flash');
+  f.classList.add('on');
+  setTimeout(() => f.classList.remove('on'), 130);
+  state.gallery++;
+  toast('📸 Đã lưu ảnh chụp vào Thư viện', 'ok');
+  pushLog('screencap -p /sdcard/Pictures/Screenshot_' + Date.now() + '.png', 'cmd');
+}
+
+/* cài APK */
+$('#apkInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const name = file.name.replace(/\.apk$/i, '');
+  state.installed.push({ id:'x' + Date.now(), name, icon:'📦', grad:'linear-gradient(135deg,#38bdf8,#1d4ed8)' });
+  toast('Đã cài đặt ' + name, 'ok');
+  pushLog('pm install -r /sdcard/Download/' + file.name + ' → Success', 'ok');
+  e.target.value = '';
+});
+
+/* thanh trượt */
+$('#brightness').oninput = e => {
+  state.settings.brightness = +e.target.value;
+  $('#phoneScreen').style.filter = `brightness(${0.55 + state.settings.brightness / 150})`;
+};
+$('#volume').oninput = e => state.settings.volume = +e.target.value;
+$('#autoRotate').onchange = e => state.settings.autoRotate = e.target.checked;
+
+$('#latency').oninput = e => {
+  state.net.latency = +e.target.value;
+  $('#hudPing').textContent = state.net.latency + ' ms';
+};
+$('#netType').onchange = e => { state.net.type = e.target.value; toast('Mạng: ' + e.target.value, 'info'); };
+$('#gpsToggle').onchange = e => toast('GPS: ' + (e.target.checked ? 'Bật' : 'Tắt'), 'info');
+$('#pingTest').onclick = () => {
+  const base = state.net.latency;
+  const v = base + Math.floor(Math.random() * 12 - 6);
+  toast(`Ping tới ${currentDevice().region}: ${v} ms`, 'ok');
+  pushLog(`ping ${currentDevice().id} → ${v}ms`, 'ok');
+};
+
+/* =========================================================
+   ADB CONSOLE
+   ========================================================= */
+const adbInput = $('#adbInput');
+$('#adbSend').onclick = () => { runCmd(adbInput.value); adbInput.value = ''; };
+adbInput.addEventListener('keydown', e => { if(e.key === 'Enter'){ runCmd(adbInput.value); adbInput.value = ''; } });
+
+function runCmd(raw){
+  const cmd = (raw || '').trim();
+  if(!cmd) return;
+  const d = currentDevice();
+  pushLog('$ ' + cmd, 'cmd');
+  const low = cmd.toLowerCase();
+
+  if(low === 'clear'){ state.log = []; renderLog(); return; }
+  if(low === 'help'){
+    pushLog('Lệnh hỗ trợ:\n  adb devices\n  ls /sdcard\n  pm list packages\n  dumpsys battery\n  wm size\n  getprop\n  input tap <x> <y>\n  input keyevent <3|4>\n  screencap\n  reboot\n  clear', 'dim');
+    return;
+  }
+  if(low === 'adb devices' || low === 'devices'){
+    pushLog('List of devices attached\n' + d.id + '\tdevice');
+    return;
+  }
+  if(low.startsWith('ls')){
+    pushLog('Alarms  Android  DCIM  Download  Movies  Music  Notifications  Pictures  Podcasts  Ringtones');
+    return;
+  }
+  if(low.includes('pm list packages')){
+    const base = ['com.android.settings','com.android.chrome','com.google.android.gms','com.android.camera',
+                  'com.android.messaging','com.android.gallery3d','com.android.deskclock','com.android.documentsui'];
+    const extra = state.installed.map(a => 'com.app.' + a.name.toLowerCase().replace(/\s+/g, ''));
+    pushLog([...base, ...extra].map(p => 'package:' + p).join('\n'));
+    return;
+  }
+  if(low.includes('dumpsys battery')){
+    pushLog(`Current Battery Service state:\n  AC powered: false\n  USB powered: true\n  status: 2\n  health: 2\n  level: ${state.battery}\n  voltage: 4201\n  temperature: 278`);
+    return;
+  }
+  if(low.includes('wm size')){
+    pushLog('Physical size: ' + d.res);
+    return;
+  }
+  if(low === 'getprop' || low.includes('getprop')){
+    pushLog(`[ro.product.model]: [${d.model}]\n[ro.build.version.release]: [${d.android}]\n[ro.product.cpu.abi]: [arm64-v8a]\n[ro.debuggable]: [1]`);
+    return;
+  }
+  if(low.startsWith('input tap')){
+    const m = cmd.match(/input tap (\d+)\s+(\d+)/i);
+    if(m){ pushLog(`Tap at (${m[1]}, ${m[2]}) dispatched`, 'ok'); toast(`Chạm tại ${m[1]}, ${m[2]}`, 'info'); }
+    else pushLog('Usage: input tap <x> <y>', 'err');
+    return;
+  }
+  if(low.startsWith('input keyevent')){
+    const k = cmd.split(/\s+/).pop();
+    pushLog('Keyevent ' + k + ' dispatched', 'ok');
+    if(k === '3') hardKey('home');
+    if(k === '4') hardKey('back');
+    return;
+  }
+  if(low.includes('screencap')){ takeScreenshot(); pushLog('Saved /sdcard/Pictures/Screenshot.png', 'ok'); return; }
+  if(low === 'reboot'){
+    pushLog('Rebooting device…', 'dim');
+    state.screen = 'off'; renderScreen();
+    setTimeout(() => { state.screen = 'lock'; renderScreen(); toast('Thiết bị đã khởi động lại', 'ok'); }, 1800);
+    return;
+  }
+  pushLog(`/system/bin/sh: ${cmd.split(' ')[0]}: not found`, 'err');
+}
+
+/* =========================================================
+   BẢNG ỨNG DỤNG (VIEW APPS)
+   ========================================================= */
+function renderAppsTable(){
+  const d = currentDevice();
+  const rows = [
+    ['Cài đặt','com.android.settings','14.2.1','86 MB','Hệ thống'],
+    ['Chrome','com.android.chrome','121.0','412 MB','Đã cập nhật'],
+    ['Camera','com.android.camera','9.8','128 MB','Hệ thống'],
+    ['Tin nhắn','com.android.messaging','12.1','54 MB','Hệ thống'],
+    ['Thư viện','com.android.gallery3d','7.4','96 MB','Hệ thống'],
+    ['Đồng hồ','com.android.deskclock','6.2','32 MB','Hệ thống'],
+    ['Play Services','com.google.android.gms','24.06','268 MB','Đã cập nhật'],
+    ['Tệp','com.android.documentsui','3.1','24 MB','Hệ thống'],
+    ...state.installed.map(a => [a.name, 'com.app.' + a.name.toLowerCase().replace(/\s+/g, ''), '1.0.0', '48 MB', 'Vừa cài']),
+  ];
+  $('#appsTable').innerHTML = rows.map(r => `
+    <tr>
+      <td><b>${r[0]}</b></td>
+      <td style="color:var(--muted);font-family:monospace;font-size:11px">${r[1]}</td>
+      <td>${r[2]}</td><td>${r[3]}</td>
+      <td><span class="badge">${r[4]}</span></td>
+    </tr>`).join('');
+  $('#appCount').textContent = rows.length + ' ứng dụng';
+}
+
+/* =========================================================
+   ĐỒNG HỒ + HUD + BIỂU ĐỒ
+   ========================================================= */
+function pad(n){ return String(n).padStart(2, '0'); }
+function weekday(d){ return ['Chủ nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'][d.getDay()]; }
+
+function tick(){
+  const n = new Date();
+  const t = `${pad(n.getHours())}:${pad(n.getMinutes())}`;
+  const pt = $('#pTime'); if(pt) pt.textContent = t;
+
+  // HUD
+  const ping = state.net.latency + Math.floor(Math.random() * 6 - 3);
+  const fps = 58 + Math.floor(Math.random() * 4);
+  const bw = (3.6 + Math.random() * 1.4).toFixed(1);
+  if($('#hudPing')) $('#hudPing').textContent = Math.max(1, ping) + ' ms';
+  if($('#hudFps'))  $('#hudFps').textContent  = fps;
+  if($('#hudBw'))   $('#hudBw').textContent   = bw + ' Mbps';
+
+  // pin tụt nhẹ theo thời gian
+  if(state.connected && Math.random() > 0.7){
+    state.battery = Math.max(5, state.battery - 1);
+    updateBattery();
+  }
+  drawChart();
+}
+function updateBattery(){ $('#pBattFill').style.width = state.battery + '%'; }
+
+const chart = $('#chart');
+const ctx = chart ? chart.getContext('2d') : null;
+let chartData = Array.from({ length: 40 }, () => 20 + Math.random() * 20);
+
+function drawChart(){
+  if(!ctx) return;
+  const w = chart.width = chart.clientWidth * 2;
+  const h = chart.height = 112;
+  ctx.clearRect(0, 0, w, h);
+
+  chartData.push(18 + Math.random() * 26);
+  chartData.shift();
+
+  // grid
+  ctx.strokeStyle = 'rgba(91,140,255,.12)';
+  ctx.lineWidth = 1;
+  for(let i = 1; i < 4; i++){
+    ctx.beginPath(); ctx.moveTo(0, h / 4 * i); ctx.lineTo(w, h / 4 * i); ctx.stroke();
+  }
+
+  // line
+  const step = w / (chartData.length - 1);
+  ctx.beginPath();
+  chartData.forEach((v, i) => {
+    const x = i * step, y = h - (v / 60) * h;
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  });
+  ctx.strokeStyle = '#22d3ee';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // fill
+  ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, 'rgba(34,211,238,.35)');
+  g.addColorStop(1, 'rgba(34,211,238,0)');
+  ctx.fillStyle = g;
+  ctx.fill();
+}
+
+/* =========================================================
+   KHỞI ĐỘNG
+   ========================================================= */
+renderDevices();
+renderScreen();
+updateBattery();
+pushLog('CloudPhone ADB Shell — gõ "help" để xem lệnh', 'dim');
+setInterval(tick, 1000);
+tick();
+
+/* tự thu nhỏ khung điện thoại nếu cửa sổ thấp */
+function fitPhone(){
+  const frame = $('#phoneFrame');
+  if(!frame) return;
+  const avail = window.innerHeight - 190;
+  const scale = Math.min(1, Math.max(0.55, avail / 700));
+  frame.style.transform = state.rotated ? 'rotate(90deg) scale(.72)' : `scale(${scale})`;
+  frame.style.marginBottom = (scale < 1 ? -(700 * (1 - scale)) : 0) + 'px';
+}
+window.addEventListener('resize', fitPhone);
+fitPhone();
+
+toast('Chào mừng đến với CloudPhone ☁', 'info');
+</script>
+</body>
+  </html>
